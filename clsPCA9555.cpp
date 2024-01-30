@@ -69,15 +69,15 @@ PCA9555::PCA9555(uint8_t address, int interruptPin) {
 /**
  * @name PCA9555 constructor
  * @param address I2C address of the IO Expander
- * @param wire I2C object to be referred by
+ * @param wirei2c I2C object to be referred by, must be previouly initialized by Wire.begin() before passing it to this constructor
  * Creates the class interface and sets the I2C Address of the port
  */
-PCA9555::PCA9555(uint8_t address, int interruptPin, WireType& wire) {
+PCA9555::PCA9555(uint8_t address, int interruptPin, WireType& wirei2c) {
     _address         = address;        // save the address id
     _valueRegister   = 0;
     _configurationRegister = 65535;
     WireType* wire {nullptr};
-    this->wire = &wire;
+    this->wire = &wirei2c;
 
     if(interruptPin >= 0)
     {
