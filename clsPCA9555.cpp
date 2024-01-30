@@ -42,6 +42,8 @@
 #include "clsPCA9555.h"
 #include "Wire.h"
 
+template <typename WireType = TwoWire>
+
 PCA9555* PCA9555::instancePointer = 0;
 
 /**
@@ -53,7 +55,29 @@ PCA9555::PCA9555(uint8_t address, int interruptPin) {
     _address         = address;        // save the address id
     _valueRegister   = 0;
     _configurationRegister = 65535;
+    WireType* wire {nullptr};    
     Wire.begin();                      // start I2C communication
+    this->wire = &Wire;
+
+    if(interruptPin >= 0)
+    {
+    instancePointer = this;
+    attachInterrupt(digitalPinToInterrupt(interruptPin), PCA9555::alertISR, LOW); // Set to low for button presses
+    }
+}
+
+/**
+ * @name PCA9555 constructor
+ * @param address I2C address of the IO Expander
+ * @param wire I2C object to be referred by
+ * Creates the class interface and sets the I2C Address of the port
+ */
+PCA9555::PCA9555(uint8_t address, int interruptPin, WireType& wire) {
+    _address         = address;        // save the address id
+    _valueRegister   = 0;
+    _configurationRegister = 65535;
+    WireType* wire {nullptr};
+    this->wire = &wire;
 
     if(interruptPin >= 0)
     {
@@ -64,9 +88,9 @@ PCA9555::PCA9555(uint8_t address, int interruptPin) {
 
 // Checks if PCA9555 is responsive. Refer to Wire.endTransmission() from Arduino for details.
 bool PCA9555::begin(){
-    Wire.beginTransmission(_address);
-    Wire.write(0x02); // Test Address
-    _error = Wire.endTransmission();
+    wire.beginTransmission(_address);
+    wire.write(0x02); // Test Address
+    _error = wire.endTransmission();
 
     if(_error != 0){
       return false;
@@ -193,7 +217,7 @@ uint8_t PCA9555::stateOfPin(uint8_t pin){
  *    400000, fast mode
  */
 void PCA9555::setClock(uint32_t clockFrequency){
-  Wire.setClock(clockFrequency);
+  wire.setClock(clockFrequency);
 }
 
 void PCA9555::alertISR()
@@ -223,13 +247,13 @@ uint16_t PCA9555::I2CGetValue(uint8_t address, uint8_t reg) {
     //
     // read the address input register
     //
-    Wire.beginTransmission(address);          // setup read registers
-    Wire.write(reg);
-    _error = Wire.endTransmission();
+    wire.beginTransmission(address);          // setup read registers
+    wire.write(reg);
+    _error = wire.endTransmission();
     //
     // ask for 2 bytes to be returned
     //
-    if (Wire.requestFrom((int)address, 1) != 1)
+    if (wire.requestFrom((int)address, 1) != 1)
     {
         //
         // we are not receing the bytes we need
@@ -239,7 +263,7 @@ uint16_t PCA9555::I2CGetValue(uint8_t address, uint8_t reg) {
     //
     // read both bytes
     //
-    _inputData = Wire.read();
+    _inputData = wire.read();
     return _inputData;
 }
 
@@ -254,8 +278,8 @@ void PCA9555::I2CSetValue(uint8_t address, uint8_t reg, uint8_t value){
     //
     // write output register to chip
     //
-    Wire.beginTransmission(address);              // setup direction registers
-    Wire.write(reg);                              // pointer to configuration register address 0
-    Wire.write(value);                            // write config register low byte
-    _error = Wire.endTransmission();
+    wire.beginTransmission(address);              // setup direction registers
+    wire.write(reg);                              // pointer to configuration register address 0
+    wire.write(value);                            // write config register low byte
+    _error = wire.endTransmission();
 }
